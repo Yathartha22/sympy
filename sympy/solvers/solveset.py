@@ -1679,7 +1679,7 @@ def substitution(system, symbols, result=[{}], known_symbols=[],
                 # update eq with everything that is known so far
                 eq2 = eq.subs(res)
                 unsolved_syms = _unsolved_syms(eq2, sort=True)
-                if not unsolved_syms:
+                if unsolved_syms:
                     if res:
                         newresult, delete_res = _append_new_soln(
                             res, None, None, imgset_yes, soln_imageset,
