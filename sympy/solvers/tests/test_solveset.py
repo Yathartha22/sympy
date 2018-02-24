@@ -268,9 +268,10 @@ def test_garbage_input():
     raises(ValueError, lambda: solveset_complex([x], x))
     assert solveset_complex(x, pi) == S.EmptySet
 
-def test_improper_params():
+    raises(ValueError, lambda: solveset((x, y), x))
     raises(ValueError, lambda: solveset(x + 1, S.Reals))
     raises(ValueError, lambda: solveset(x + 1, x, 2))
+
 
 def test_solve_mul():
     assert solveset_real((a*x + b)*(exp(x) - 3), x) == \
@@ -286,7 +287,9 @@ def test_solve_invert():
     assert solveset_real(3**(x + 2), x) == FiniteSet()
     assert solveset_real(3**(2 - x), x) == FiniteSet()
 
-    assert solveset_real(y - b*exp(a/x), x) == Intersection(S.Reals, FiniteSet(a/log(y/b)))
+    assert solveset_real(y - b*exp(a/x), x) == Intersection(
+        S.Reals, FiniteSet(a/log(y/b)))
+
     # issue 4504
     assert solveset_real(2**x - 10, x) == FiniteSet(log(10)/log(2))
 
@@ -967,14 +970,17 @@ def test_conditionset():
     assert solveset(Eq(sin(x)**2 + cos(x)**2, 1), x, domain=S.Reals) == \
         ConditionSet(x, True, S.Reals)
 
-    assert solveset(Eq(x**2 + x*sin(x), 1), x, domain=S.Reals) == \
-        ConditionSet(x, Eq(x*(x + sin(x)) - 1, 0), S.Reals)
+    assert solveset(Eq(x**2 + x*sin(x), 1), x, domain=S.Reals
+        ) == ConditionSet(x, Eq(x*(x + sin(x)) - 1, 0), S.Reals)
 
-    assert solveset(Eq(-I*(exp(I*x) - exp(-I*x))/2, 1), x) == \
-        imageset(Lambda(n, 2*n*pi + pi/2), S.Integers)
+    assert solveset(Eq(-I*(exp(I*x) - exp(-I*x))/2, 1), x
+        ) == imageset(Lambda(n, 2*n*pi + pi/2), S.Integers)
 
-    assert solveset(x + sin(x) > 1, x, domain=S.Reals) == \
-        ConditionSet(x, x + sin(x) > 1, S.Reals)
+    assert solveset(x + sin(x) > 1, x, domain=S.Reals
+        ) == ConditionSet(x, x + sin(x) > 1, S.Reals)
+
+    assert solveset(Eq(sin(Abs(x)), x), x, domain=S.Reals
+        ) == ConditionSet(x, Eq(-x + sin(Abs(x)), 0), S.Reals)
 
     assert solveset(Eq(sin(Abs(x)), x), x, domain=S.Reals) == Union(
         ConditionSet(x, Eq(-x + sin(x), 0), Interval(0, oo)),
@@ -1723,3 +1729,5 @@ def test_issue_10158():
     assert solveset(Max(Abs(x - 3) - 1, x + 2) - 3, x, dom) == FiniteSet(-1, 1)
     raises(ValueError, lambda: solveset(Abs(x - 1) - Abs(y), x, dom))
     raises(ValueError, lambda: solveset(Abs(x + 4*Abs(x + 1)), x, dom))
+    assert solveset(2*Abs(x + Abs(x + Max(3, x))) - 2, x, S.Reals
+        ) == FiniteSet(-1, -2)

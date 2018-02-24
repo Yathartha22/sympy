@@ -1,6 +1,6 @@
 from __future__ import print_function, division
 
-from sympy.core import S, Add, Mul, sympify, Symbol, Dummy
+from sympy.core import S, Add, Mul, sympify, Symbol, Dummy, Basic
 from sympy.core.exprtools import factor_terms
 from sympy.core.function import (Function, Derivative, ArgumentIndexError,
     AppliedUndef)
@@ -499,7 +499,7 @@ class Abs(Function):
                 return arg2
         # reject result if all new conjugates are just wrappers around
         # an expression that was already in the arg
-        conj = arg.conjugate()
+        conj = signsimp(arg.conjugate(), evaluate=False)
         new_conj = conj.atoms(conjugate) - arg.atoms(conjugate)
         if new_conj and all(arg.has(i.args[0]) for i in new_conj):
             return
@@ -1089,7 +1089,7 @@ def polarify(eq, subs=True, lift=False):
 
 
 def _unpolarify(eq, exponents_only, pause=False):
-    if isinstance(eq, bool) or eq.is_Atom:
+    if not isinstance(eq, Basic) or eq.is_Atom:
         return eq
 
     if not pause:

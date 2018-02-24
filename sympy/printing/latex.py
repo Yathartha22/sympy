@@ -388,6 +388,7 @@ class LatexPrinter(Printer):
 
     def _print_Mul(self, expr):
         from sympy.core.power import Pow
+        from sympy.physics.units import Quantity
         include_parens = False
         if _coeff_isneg(expr):
             expr = -expr
@@ -412,7 +413,11 @@ class LatexPrinter(Printer):
                 if self.order not in ('old', 'none'):
                     args = expr.as_ordered_factors()
                 else:
-                    args = expr.args
+                    args = list(expr.args)
+
+                # If quantities are present append them at the back
+                args = sorted(args, key=lambda x: isinstance(x, Quantity) or
+                             (isinstance(x, Pow) and isinstance(x.base, Quantity)))
 
                 for i, term in enumerate(args):
                     term_tex = self._print(term)
@@ -1472,18 +1477,33 @@ class LatexPrinter(Printer):
             return r"%s^\dagger" % self._print(mat)
 
     def _print_MatAdd(self, expr):
-        terms = list(expr.args)
-        tex = " + ".join(map(self._print, terms))
-        return tex
+        terms = [self._print(t) for t in expr.args]
+        l = []
+        for t in terms:
+            if t.startswith('-'):
+                sign = "-"
+                t = t[1:]
+            else:
+                sign = "+"
+            l.extend([sign, t])
+        sign = l.pop(0)
+        if sign == '+':
+            sign = ""
+        return sign + ' '.join(l)
 
     def _print_MatMul(self, expr):
-        from sympy import Add, MatAdd, HadamardProduct
+        from sympy import Add, MatAdd, HadamardProduct, MatMul, Mul
 
         def parens(x):
             if isinstance(x, (Add, MatAdd, HadamardProduct)):
                 return r"\left(%s\right)" % self._print(x)
             return self._print(x)
-        return ' '.join(map(parens, expr.args))
+
+        if isinstance(expr, MatMul) and expr.args[0].is_Number and expr.args[0]<0:
+            expr = Mul(-1*expr.args[0], MatMul(*expr.args[1:]))
+            return '-' + ' '.join(map(parens, expr.args))
+        else:
+            return ' '.join(map(parens, expr.args))
 
     def _print_Mod(self, expr, exp=None):
         if exp is not None:
@@ -1500,6 +1520,15 @@ class LatexPrinter(Printer):
                 return r"\left(%s\right)" % self._print(x)
             return self._print(x)
         return r' \circ '.join(map(parens, expr.args))
+
+    def _print_KroneckerProduct(self, expr):
+        from sympy import Add, MatAdd, MatMul
+
+        def parens(x):
+            if isinstance(x, (Add, MatAdd, MatMul)):
+                return r"\left(%s\right)" % self._print(x)
+            return self._print(x)
+        return r' \otimes '.join(map(parens, expr.args))
 
     def _print_MatPow(self, expr):
         base, exp = expr.base, expr.exp
@@ -2101,6 +2130,10 @@ class LatexPrinter(Printer):
                     self._print(exp))
         return r'\Omega\left(%s\right)' % self._print(expr.args[0])
 
+    def _print_Quantity(self, expr):
+        if expr.name.name == 'degree':
+            return r"^\circ"
+        return r"\detokenize {%s}" % expr
 
 def translate(s):
     r'''
