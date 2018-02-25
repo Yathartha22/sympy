@@ -1072,7 +1072,8 @@ def solveset(f, symbol=None, domain=S.Complexes):
     # the solution is a set, duplication of results is not
     # an issue, e.g. {y, -y} when y is 0 will be {0}
     f, mask = _masked(f, Abs)
-    f = f.rewrite(Piecewise) # everything that's not an Abs
+    if symbol.is_real or not mask:
+        f = f.rewrite(Piecewise) # everything that's not an Abs
     for d, e in mask:
         # everything *in* an Abs
         e = e.func(e.args[0].rewrite(Piecewise))
